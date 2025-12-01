@@ -26,4 +26,8 @@ pub mod charis {
     pub fn tip_creator(ctx: Context<TipCreator>, amount: u64, message: String) -> Result<()> {
         tip_creator::handler(ctx, amount, message)
     }
+
+    pub fn withdraw_tips(ctx: Context<WithdrawTips>, amount: u64) -> Result<()> {
+        withdraw_tips::handler(ctx, amount)
+    }
 }

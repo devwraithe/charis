@@ -5,7 +5,7 @@ use anchor_spl::{
 };
 
 use crate::{
-    constants::{CREATOR_PROFILE_SEED, VAULT_STATE_SEED},
+    constants::{CREATOR_PROFILE_SEED, MAX_BIO_LENGTH, MAX_NAME_LENGTH, VAULT_STATE_SEED},
     errors::CharisError,
     states::{ProfileState, VaultState},
 };
@@ -51,8 +51,8 @@ pub fn handler(ctx: Context<InitializeCreator>, name: String, bio: String) -> Re
     let profile_state = &mut ctx.accounts.profile_state;
     let clock = Clock::get()?;
 
-    require!(name.len() <= 50, CharisError::NameTooLong);
-    require!(bio.len() <= 200, CharisError::BioTooLong);
+    require!(name.len() <= MAX_NAME_LENGTH, CharisError::NameTooLong);
+    require!(bio.len() <= MAX_BIO_LENGTH, CharisError::BioTooLong);
     require!(!name.is_empty(), CharisError::NameEmpty);
 
     // Initialize vault state
