@@ -6,7 +6,7 @@ use anchor_spl::{
 
 use crate::{
     constants::{
-        FAN_STATS_SEED, MAX_TIP_AMOUNT, MIN_TIP_AMOUNT, TIP_RECORD_SEED, VAULT_STATE_SEED,
+        FAN_STATS_SEED, MAX_MESSAGE_LENGTH, MAX_TIP_AMOUNT, MIN_TIP_AMOUNT, TIP_RECORD_SEED, VAULT_STATE_SEED
     },
     errors::CharisError,
     states::{FanStats, TipRecord, VaultState},
@@ -81,6 +81,7 @@ pub fn handler(ctx: Context<TipCreator>, amount: u64, message: String) -> Result
     require!(amount > 0, CharisError::InvalidAmount);
     require!(amount >= MIN_TIP_AMOUNT, CharisError::BelowMinimumTip);
     require!(amount <= MAX_TIP_AMOUNT, CharisError::ExceedsMaximumTip);
+    require!(message.len() <= MAX_MESSAGE_LENGTH, CharisError::MessageTooLong);
 
     // Update vault state
     vault_state.number_of_tips = vault_state
