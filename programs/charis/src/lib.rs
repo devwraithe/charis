@@ -22,4 +22,8 @@ pub mod charis {
     ) -> Result<()> {
         initialize_creator::handler(ctx, name, bio)
     }
+
+    pub fn tip_creator(ctx: Context<TipCreator>, amount: u64, message: String) -> Result<()> {
+        tip_creator::handler(ctx, amount, message)
+    }
 }

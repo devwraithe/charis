@@ -11,7 +11,6 @@ use crate::{
 };
 
 #[derive(Accounts)]
-// #[instruction(name: String, bio: String)]
 pub struct InitializeCreator<'info> {
     #[account(mut)]
     pub creator: Signer<'info>,

@@ -8,4 +8,14 @@ pub enum CharisError {
     BioTooLong,
     #[msg("Name is empty")]
     NameEmpty,
+    #[msg("Math overflow")]
+    MathOverflow,
+    #[msg("Tip amount must be greater than zero")]
+    InvalidAmount,
+    #[msg("Tip amount is below the allowed minimum")]
+    BelowMinimumTip,
+    #[msg("Tip amount exceeds the allowed maximum")]
+    ExceedsMaximumTip,
+    #[msg("Insufficient funds to process this tip")]
+    InsufficientFunds,
 }
