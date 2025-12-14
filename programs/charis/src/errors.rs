@@ -19,12 +19,16 @@ pub enum CharisError {
     BelowMinimumTip,
     #[msg("Tip amount exceeds maximum of 1,000 USDC")]
     ExceedsMaximumTip,
+    #[msg("Cannot tip yourself")]
+    SelfTip,
 
     // Balance and fund errors
     #[msg("Insufficient funds to complete this transaction")]
     InsufficientFunds,
     #[msg("Vault balance insufficient for withdrawal")]
     InsufficientVaultBalance,
+    #[msg("Unauthorized withdrawal attempt")]
+    UnauthorizedWithdrawal,
 
     // Withdrawal errors
     #[msg("Withdrawal must be at least 5 USDC")]

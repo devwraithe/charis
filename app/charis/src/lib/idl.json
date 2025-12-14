@@ -1,0 +1,666 @@
+{
+  "address": "DDkLjak8nU9GRs1L9v3SPkXYXj8357qFr6JCSPPsuPqZ",
+  "metadata": {
+    "name": "charis",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "initialize_creator",
+      "discriminator": [
+        29,
+        153,
+        44,
+        99,
+        52,
+        172,
+        81,
+        115
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "creator_profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  114,
+                  101,
+                  97,
+                  116,
+                  111,
+                  114,
+                  95,
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "bio",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "send_tip",
+      "discriminator": [
+        231,
+        88,
+        56,
+        242,
+        241,
+        6,
+        31,
+        59
+      ],
+      "accounts": [
+        {
+          "name": "fan",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "creator"
+        },
+        {
+          "name": "vault_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "fan_stats",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  97,
+                  110,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "fan"
+              }
+            ]
+          }
+        },
+        {
+          "name": "tip_record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  105,
+                  112,
+                  95,
+                  114,
+                  101,
+                  99,
+                  111,
+                  114,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "fan"
+              },
+              {
+                "kind": "account",
+                "path": "vault_state.total_no_tips_received",
+                "account": "VaultState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "message",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "withdraw_tips",
+      "discriminator": [
+        107,
+        192,
+        228,
+        68,
+        165,
+        120,
+        164,
+        23
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "vault_state"
+          ]
+        },
+        {
+          "name": "vault_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "CreatorProfile",
+      "discriminator": [
+        251,
+        250,
+        184,
+        111,
+        214,
+        178,
+        32,
+        221
+      ]
+    },
+    {
+      "name": "FanStats",
+      "discriminator": [
+        71,
+        135,
+        121,
+        94,
+        180,
+        10,
+        227,
+        3
+      ]
+    },
+    {
+      "name": "TipRecord",
+      "discriminator": [
+        43,
+        243,
+        62,
+        130,
+        183,
+        4,
+        81,
+        185
+      ]
+    },
+    {
+      "name": "VaultState",
+      "discriminator": [
+        228,
+        196,
+        82,
+        165,
+        98,
+        210,
+        235,
+        152
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "NameEmpty",
+      "msg": "Name cannot be empty"
+    },
+    {
+      "code": 6001,
+      "name": "NameTooLong",
+      "msg": "Name exceeds maximum length of 50 characters"
+    },
+    {
+      "code": 6002,
+      "name": "BioTooLong",
+      "msg": "Bio exceeds maximum length of 200 characters"
+    },
+    {
+      "code": 6003,
+      "name": "MessageTooLong",
+      "msg": "Message exceeds maximum length of 100 characters"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidAmount",
+      "msg": "Tip amount must be greater than zero"
+    },
+    {
+      "code": 6005,
+      "name": "BelowMinimumTip",
+      "msg": "Tip amount below minimum of 0.1 USDC"
+    },
+    {
+      "code": 6006,
+      "name": "ExceedsMaximumTip",
+      "msg": "Tip amount exceeds maximum of 1,000 USDC"
+    },
+    {
+      "code": 6007,
+      "name": "SelfTip",
+      "msg": "Cannot tip yourself"
+    },
+    {
+      "code": 6008,
+      "name": "InsufficientFunds",
+      "msg": "Insufficient funds to complete this transaction"
+    },
+    {
+      "code": 6009,
+      "name": "InsufficientVaultBalance",
+      "msg": "Vault balance insufficient for withdrawal"
+    },
+    {
+      "code": 6010,
+      "name": "UnauthorizedWithdrawal",
+      "msg": "Unauthorized withdrawal attempt"
+    },
+    {
+      "code": 6011,
+      "name": "BelowMinimumWithdrawal",
+      "msg": "Withdrawal must be at least 5 USDC"
+    },
+    {
+      "code": 6012,
+      "name": "MathOverflow",
+      "msg": "Arithmetic overflow occurred"
+    }
+  ],
+  "types": [
+    {
+      "name": "CreatorProfile",
+      "docs": [
+        "Creator's public profile information"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "bio",
+            "type": "string"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "updated_at",
+            "type": "i64"
+          },
+          {
+            "name": "is_active",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FanStats",
+      "docs": [
+        "Statistics for individual fans"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "fan",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_tips_sent",
+            "type": "u64"
+          },
+          {
+            "name": "total_amount_sent",
+            "type": "u64"
+          },
+          {
+            "name": "biggest_tip",
+            "type": "u64"
+          },
+          {
+            "name": "smallest_tip",
+            "type": "u64"
+          },
+          {
+            "name": "first_tip_at",
+            "type": "i64"
+          },
+          {
+            "name": "last_tip_at",
+            "type": "i64"
+          },
+          {
+            "name": "creators_supported",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TipRecord",
+      "docs": [
+        "Individual tip transaction record"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "fan",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "message",
+            "type": "string"
+          },
+          {
+            "name": "is_anonymous",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VaultState",
+      "docs": [
+        "Tracks creator's vault statistics and earnings"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_earnings",
+            "type": "u64"
+          },
+          {
+            "name": "total_supporters",
+            "type": "u64"
+          },
+          {
+            "name": "total_amount_of_tips_received",
+            "type": "u64"
+          },
+          {
+            "name": "total_no_tips_received",
+            "type": "u64"
+          },
+          {
+            "name": "tips_this_month",
+            "type": "u64"
+          },
+          {
+            "name": "average_tip",
+            "type": "u64"
+          },
+          {
+            "name": "last_tip_at",
+            "type": "i64"
+          },
+          {
+            "name": "month_start_timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "vault_state_bump",
+            "type": "u8"
+          },
+          {
+            "name": "vault_bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}

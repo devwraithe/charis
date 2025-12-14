@@ -1,11 +1,8 @@
 use anchor_lang::prelude::*;
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
-};
+use anchor_lang::system_program;
 
 use crate::{
-    constants::{MIN_WITHDRAWAL_AMOUNT, VAULT_STATE_SEED},
+    constants::{MIN_WITHDRAWAL_AMOUNT, VAULT_SEED, VAULT_STATE_SEED},
     errors::CharisError,
     states::VaultState,
 };
@@ -14,58 +11,75 @@ use crate::{
 pub struct WithdrawTips<'info> {
     #[account(mut)]
     pub creator: Signer<'info>,
-    #[account(mint::token_program = token_program)]
-    pub mint: InterfaceAccount<'info, Mint>,
+
     #[account(
         mut,
         seeds = [VAULT_STATE_SEED.as_bytes(), creator.key().as_ref()],
-        bump = vault_state.bump,
-        has_one = creator,
+        bump = vault_state.vault_state_bump,
+        has_one = creator @ CharisError::UnauthorizedWithdrawal,
     )]
     pub vault_state: Account<'info, VaultState>,
+
+    /// CHECK: SOL vault PDA
     #[account(
         mut,
-        associated_token::mint = mint,
-        associated_token::authority = creator,
-        associated_token::token_program = token_program,
+        seeds = [VAULT_SEED.as_bytes(), creator.key().as_ref()],
+        bump,
     )]
-    pub vault: InterfaceAccount<'info, TokenAccount>,
-    #[account(
-        mut,
-        associated_token::mint = mint,
-        associated_token::authority = creator,
-        associated_token::token_program = token_program,
-    )]
-    pub creator_token_account: InterfaceAccount<'info, TokenAccount>,
-    pub token_program: Interface<'info, TokenInterface>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub vault: AccountInfo<'info>,
+
     pub system_program: Program<'info, System>,
 }
 
 pub fn handler(ctx: Context<WithdrawTips>, amount: u64) -> Result<()> {
+    let creator = &ctx.accounts.creator;
     let vault = &ctx.accounts.vault;
+    let vault_state = &mut ctx.accounts.vault_state;
 
-    // Check vault has sufficient balance
-    require!(
-        vault.amount >= amount,
-        CharisError::InsufficientVaultBalance
-    );
-
-    // Check withdrawal meets minimum (5 USDC = 5_000_000 with 6 decimals)
+    // Validations
+    require!(amount > 0, CharisError::InvalidAmount);
     require!(
         amount >= MIN_WITHDRAWAL_AMOUNT,
         CharisError::BelowMinimumWithdrawal
     );
 
-    // Transfer from vault to creator's wallet
-    let cpi_accounts = TransferChecked {
-        from: ctx.accounts.vault.to_account_info(),
-        to: ctx.accounts.creator_token_account.to_account_info(),
-        authority: ctx.accounts.creator.to_account_info(),
-        mint: ctx.accounts.mint.to_account_info(),
-    };
-    let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
-    transfer_checked(cpi_ctx, amount, ctx.accounts.mint.decimals)?;
+    let vault_balance = vault.lamports();
+    require!(
+        vault_balance >= amount,
+        CharisError::InsufficientVaultBalance
+    );
+
+    // Update vault state
+    vault_state.total_earnings = vault_state
+        .total_earnings
+        .checked_sub(amount)
+        .ok_or(CharisError::MathOverflow)?;
+
+    // Transfer SOL from vault to creator
+    let vault_seeds = &[
+        VAULT_SEED.as_bytes(),
+        creator.key.as_ref(),
+        &[ctx.bumps.vault],
+    ];
+    let signer_seeds = &[&vault_seeds[..]];
+
+    system_program::transfer(
+        CpiContext::new_with_signer(
+            ctx.accounts.system_program.to_account_info(),
+            system_program::Transfer {
+                from: vault.to_account_info(),
+                to: creator.to_account_info(),
+            },
+            signer_seeds,
+        ),
+        amount,
+    )?;
+
+    msg!(
+        "Withdrawn: {} lamports from vault to {}",
+        amount,
+        creator.key()
+    );
 
     Ok(())
 }
