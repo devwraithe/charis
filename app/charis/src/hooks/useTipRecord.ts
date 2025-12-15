@@ -29,27 +29,26 @@ export function useTipRecords(options?: UseTipRecordsOptions) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchRecords = useCallback(async () => {
-    if (!program) {
-      setError("Program not initialized");
-      return;
-    }
+    if (!program) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      // Fetch all tip records
-      let allTipRecords = await program.account.tipRecord.all();
+      const filters = [];
 
-      // Apply filters
       if (options?.filterByCreator) {
         const creatorPk =
           typeof options.filterByCreator === "string"
             ? new PublicKey(options.filterByCreator)
             : options.filterByCreator;
-        allTipRecords = allTipRecords.filter((r) =>
-          r.account.creator.equals(creatorPk)
-        );
+
+        filters.push({
+          memcmp: {
+            offset: 8 + 32,
+            bytes: creatorPk.toBase58(),
+          },
+        });
       }
 
       if (options?.filterByFan) {
@@ -57,13 +56,18 @@ export function useTipRecords(options?: UseTipRecordsOptions) {
           typeof options.filterByFan === "string"
             ? new PublicKey(options.filterByFan)
             : options.filterByFan;
-        allTipRecords = allTipRecords.filter((r) =>
-          r.account.fan.equals(fanPk)
-        );
+
+        filters.push({
+          memcmp: {
+            offset: 8 + 32 + 32,
+            bytes: fanPk.toBase58(),
+          },
+        });
       }
 
-      // Map to interface and sort newest first
-      let mappedRecords = allTipRecords
+      const accounts = await program.account.tipRecord.all(filters);
+
+      let mapped = accounts
         .map((record) => ({
           creatorVault: record.account.creatorVault,
           creator: record.account.creator,
@@ -77,16 +81,14 @@ export function useTipRecords(options?: UseTipRecordsOptions) {
         }))
         .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
-      // Apply limit
       if (options?.limit) {
-        mappedRecords = mappedRecords.slice(0, options.limit);
+        mapped = mapped.slice(0, options.limit);
       }
 
-      setRecords(mappedRecords);
+      setRecords(mapped);
     } catch (err: any) {
-      console.error("Error fetching tip records:", err);
-      setError(err.message || "Failed to fetch tip records");
-      toast.error(`Failed to fetch tip records: ${err.message}`);
+      console.error(err);
+      setError(err.message ?? "Failed to fetch records");
       setRecords([]);
     } finally {
       setLoading(false);
@@ -94,8 +96,9 @@ export function useTipRecords(options?: UseTipRecordsOptions) {
   }, [program, options?.filterByCreator, options?.filterByFan, options?.limit]);
 
   useEffect(() => {
+    if (!program) return;
     fetchRecords();
-  }, [fetchRecords]);
+  }, [program, fetchRecords]);
 
   return { records, loading, error, refetch: fetchRecords };
 }

@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { PublicKey } from "@solana/web3.js";
-import { toast } from "sonner";
 import { useProgram } from "./useProgram";
 import { getCreatorProfilePda } from "@/lib/utils";
 
@@ -21,30 +20,37 @@ export function useProfileState(creatorAddress?: string | PublicKey) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProfile = useCallback(async () => {
-    if (!program) {
-      toast.warning("Program must be initialized.");
-      setProfile(null);
-      return;
-    }
+  // Prevent duplicate fetches for the same creator
+  const lastFetchedRef = useRef<string | null>(null);
 
-    if (!creatorAddress) {
-      setProfile(null);
-      setError("No creator address provided");
-      return;
-    }
+  const fetchProfile = useCallback(async () => {
+    if (!program || !creatorAddress) return;
+
+    const creator =
+      typeof creatorAddress === "string"
+        ? new PublicKey(creatorAddress)
+        : creatorAddress;
+
+    const creatorKey = creator.toBase58();
+
+    // Avoid refetching same profile repeatedly
+    if (lastFetchedRef.current === creatorKey) return;
+    lastFetchedRef.current = creatorKey;
 
     try {
       setLoading(true);
       setError(null);
 
-      const creator =
-        typeof creatorAddress === "string"
-          ? new PublicKey(creatorAddress)
-          : creatorAddress;
-
       const [profilePda] = getCreatorProfilePda(creator, program.programId);
-      const account = await program.account.creatorProfile.fetch(profilePda);
+
+      const account = await program.account.creatorProfile.fetchNullable(
+        profilePda
+      );
+
+      if (!account) {
+        setProfile(null);
+        return;
+      }
 
       setProfile({
         creator: account.creator,
@@ -57,9 +63,8 @@ export function useProfileState(creatorAddress?: string | PublicKey) {
       });
     } catch (err: any) {
       console.error("Failed to fetch profile:", err);
-      setProfile(null);
       setError(err.message ?? "Failed to fetch profile");
-      toast.error("Failed to fetch profile");
+      setProfile(null);
     } finally {
       setLoading(false);
     }
@@ -69,5 +74,10 @@ export function useProfileState(creatorAddress?: string | PublicKey) {
     fetchProfile();
   }, [fetchProfile]);
 
-  return { profile, loading, error, refetch: fetchProfile };
+  return {
+    profile,
+    loading,
+    error,
+    refetch: fetchProfile,
+  };
 }
