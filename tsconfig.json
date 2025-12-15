@@ -6,6 +6,7 @@
     "module": "commonjs",
     "target": "es6",
     "esModuleInterop": true,
-    "noUnusedLocals": false
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
   }
 }

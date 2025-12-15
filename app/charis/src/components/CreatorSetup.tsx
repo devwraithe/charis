@@ -1,6 +1,5 @@
 import InitializeCreatorForm from "@/components/InitializeCreatorForm";
 import NavbarWide from "./ui/NavbarWide";
-import { NETWORK } from "@/config/connection";
 
 interface CreatorSetupProps {
     onInitialize: (name: string, bio: string) => Promise<void>;

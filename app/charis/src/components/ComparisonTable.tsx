@@ -1,4 +1,4 @@
-import { Check, X, Zap, DollarSign, Globe, Lock } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 
 interface ComparisonItem {
     feature: string;

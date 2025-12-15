@@ -11,7 +11,7 @@ interface Tip {
 }
 
 function LiveTippingFeed() {
-    const [tips, setTips] = useState<Tip[]>([
+    const [tips, _setTips] = useState<Tip[]>([
         {
             id: 1,
             sender: 'CryptoFan92',
@@ -114,7 +114,7 @@ function LiveTippingFeed() {
 
                     {/* Recent Tips List */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {tips.slice(0, 4).map((tip, index) => (
+                        {tips.slice(0, 4).map((tip, _) => (
                             <div
                                 key={tip.id}
                                 className="bg-gray-800/30 backdrop-blur-sm border border-gray-700/30 rounded-xl p-4 hover:border-gray-600/50 hover:bg-gray-800/50 transition-all duration-300"

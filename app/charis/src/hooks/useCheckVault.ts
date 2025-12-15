@@ -32,7 +32,6 @@ export function useCheckVault() {
     }
   }, [wallet?.publicKey, program]);
 
-  // Reset ONLY when wallet changes
   useEffect(() => {
     if (!wallet?.publicKey) {
       setHasVault(null);
