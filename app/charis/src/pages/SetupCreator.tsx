@@ -11,7 +11,7 @@ function SetupCreator() {
 
     // Creator initialized successfully
     if (signature) {
-        const explorerUrl = `https://explorer.solana.com/tx/${signature}`;
+        const explorerUrl = `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
 
         return (
             <div className="p-6 flex justify-center items-center h-screen">

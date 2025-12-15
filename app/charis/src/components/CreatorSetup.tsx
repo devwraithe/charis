@@ -15,10 +15,7 @@ function CreatorSetup({
     status,
     signature,
 }: CreatorSetupProps) {
-    const explorerUrl = signature
-        ? `https://explorer.solana.com/tx/${signature}${NETWORK === "localnet" ? `?cluster=${NETWORK}` : ""
-        }`
-        : null;
+    const explorerUrl = `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
 
     return (
         <div className="space-y-6 p-6">

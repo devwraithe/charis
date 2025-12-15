@@ -12,7 +12,7 @@ charis = "DDkLjak8nU9GRs1L9v3SPkXYXj8357qFr6JCSPPsuPqZ"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
