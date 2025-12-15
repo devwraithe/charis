@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
-import { toast } from "sonner";
 import { useProgram } from "./useProgram";
 
 export interface TipRecord {
