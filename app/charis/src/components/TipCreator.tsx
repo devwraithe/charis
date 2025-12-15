@@ -4,7 +4,6 @@ import { PublicKey } from '@solana/web3.js';
 import { ArrowRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Spinner from './ui/Spinner';
-import { useFanStats } from '@/hooks/useFanStats';
 
 interface TipCreatorProps {
     creatorAddress?: string;

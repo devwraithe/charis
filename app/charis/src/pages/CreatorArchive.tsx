@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Wallet, TrendingUp, Users, DollarSign, Copy, ExternalLink, Calendar, Clock } from 'lucide-react';
+import { Wallet, TrendingUp, Users, DollarSign, Clock } from 'lucide-react';
 
 function CreatorArchivePage() {
     const [walletAddress] = useState('7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU');

@@ -1,4 +1,4 @@
-import { Calendar, Heart, TrendingUp, Users, Zap } from "lucide-react";
+import { Calendar, Heart, TrendingUp, Zap } from "lucide-react";
 import StatCard from "./StatCard";
 import { useFanStats } from "@/hooks/useFanStats";
 import { formatDateWithOrdinal } from "@/lib/utils";

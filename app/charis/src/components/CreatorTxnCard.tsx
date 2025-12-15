@@ -3,6 +3,8 @@ import { PublicKey } from "@solana/web3.js";
 
 export interface TipRecord {
     fan: PublicKey | string;
+    creator: string,
+    creatorVault: string,
     amount: number; // in SOL
     message: string;
     timestamp: Date;

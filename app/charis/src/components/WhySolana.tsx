@@ -1,4 +1,4 @@
-import { Check, X, Zap, DollarSign, Globe, Lock } from 'lucide-react';
+import { Zap, DollarSign, Globe, Lock } from 'lucide-react';
 import SectionCard from './SectionCard';
 import FeatureCard from './FeatureCard';
 import ComparisonTable from './ComparisonTable';

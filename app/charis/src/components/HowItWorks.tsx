@@ -1,4 +1,4 @@
-import { Wallet, Search, Zap, ArrowRight } from 'lucide-react';
+import { Wallet, Search, Zap } from 'lucide-react';
 import SectionCard from './SectionCard';
 import FeatureCard from './FeatureCard';
 
