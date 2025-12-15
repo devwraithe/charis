@@ -334,7 +334,8 @@ yarn dev
 ```env
 # app/.env.local
 NEXT_PUBLIC_NETWORK=localnet
-NEXT_PUBLIC_PROGRAM_ID=<your_deployed_program_id>
+NEXT_PUBLIC_NETWORK=devnet
+NEXT_PUBLIC_HELIUS_RPC_URL=https://devnet.helius-rpc.com/?api-key=YOUR_API_KEY_HERE
 ```
 
 ### Usage

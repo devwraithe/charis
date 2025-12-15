@@ -20,8 +20,10 @@ export function useProfileState(creatorAddress?: string | PublicKey) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Prevent duplicate fetches for the same creator
-  const lastFetchedRef = useRef<string | null>(null);
+  // Cache and debouncing
+  const cacheRef = useRef<Map<string, ProfileState>>(new Map());
+  const lastFetchTimeRef = useRef<Map<string, number>>(new Map());
+  const CACHE_DURATION = 30000; // 30 seconds
 
   const fetchProfile = useCallback(async () => {
     if (!program || !creatorAddress) return;
@@ -32,10 +34,14 @@ export function useProfileState(creatorAddress?: string | PublicKey) {
         : creatorAddress;
 
     const creatorKey = creator.toBase58();
+    const now = Date.now();
+    const lastFetch = lastFetchTimeRef.current.get(creatorKey) || 0;
 
-    // Avoid refetching same profile repeatedly
-    if (lastFetchedRef.current === creatorKey) return;
-    lastFetchedRef.current = creatorKey;
+    // Return cached if still fresh
+    if (cacheRef.current.has(creatorKey) && now - lastFetch < CACHE_DURATION) {
+      setProfile(cacheRef.current.get(creatorKey)!);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -52,7 +58,7 @@ export function useProfileState(creatorAddress?: string | PublicKey) {
         return;
       }
 
-      setProfile({
+      const profileData: ProfileState = {
         creator: account.creator,
         name: account.name,
         bio: account.bio,
@@ -60,7 +66,13 @@ export function useProfileState(creatorAddress?: string | PublicKey) {
         updatedAt: new Date(Number(account.updatedAt) * 1000),
         isActive: account.isActive,
         bump: account.bump,
-      });
+      };
+
+      // Update cache
+      cacheRef.current.set(creatorKey, profileData);
+      lastFetchTimeRef.current.set(creatorKey, now);
+
+      setProfile(profileData);
     } catch (err: any) {
       console.error("Failed to fetch profile:", err);
       setError(err.message ?? "Failed to fetch profile");

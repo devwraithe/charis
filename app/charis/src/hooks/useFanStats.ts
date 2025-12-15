@@ -1,16 +1,16 @@
-import { useCallback, useEffect, useState } from "react";
-import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { useProgram } from "./useProgram";
 import { getFanStats } from "@/lib/utils";
 import { connection } from "@/config/connection";
+import { useQuery } from "@tanstack/react-query";
 
 export interface FanStats {
   fan: PublicKey;
-  walletBalance: number; // SOL
+  walletBalance: number;
   totalTipsSent: number;
-  totalAmountSent: number; // SOL
-  biggestTip: number; // SOL
-  smallestTip: number; // SOL
+  totalAmountSent: number;
+  biggestTip: number;
+  smallestTip: number;
   firstTipAt: Date | null;
   lastTipAt: Date | null;
   creatorsSupported: number;
@@ -20,46 +20,32 @@ export interface FanStats {
 export function useFanStats(fanAddress?: string | PublicKey) {
   const { program, wallet } = useProgram();
 
-  const [stats, setStats] = useState<FanStats | null>(null);
-  const [loading, setLoading] = useState(false);
+  const targetPubkey = fanAddress
+    ? typeof fanAddress === "string"
+      ? new PublicKey(fanAddress)
+      : fanAddress
+    : wallet?.publicKey ?? null;
 
-  const fetchFanStats = useCallback(async () => {
-    if (!program) {
-      setStats(null);
-      return;
-    }
+  const query = useQuery({
+    queryKey: ["fan-stats", targetPubkey?.toBase58()],
+    queryFn: async (): Promise<FanStats | null> => {
+      if (!program || !targetPubkey) return null;
 
-    const targetAddress = fanAddress || wallet?.publicKey;
-    if (!targetAddress) {
-      setStats(null);
-      return;
-    }
+      const [fanStatsPda] = getFanStats(targetPubkey, program.programId);
 
-    const fan =
-      typeof targetAddress === "string"
-        ? new PublicKey(targetAddress)
-        : targetAddress;
-
-    setLoading(true);
-
-    try {
-      // ---- Wallet balance (system account) ----
       let walletBalance = 0;
       try {
-        const lamports = await connection.getBalance(fan);
-        walletBalance = lamports / LAMPORTS_PER_SOL;
+        walletBalance = await connection.getBalance(targetPubkey);
       } catch {
         walletBalance = 0;
       }
 
-      // ---- FanStats PDA ----
-      const [fanStatsPda] = getFanStats(fan, program.programId);
       const account = await program.account.fanStats.fetchNullable(fanStatsPda);
 
       if (!account) {
-        setStats({
-          fan,
-          walletBalance,
+        return {
+          fan: targetPubkey,
+          walletBalance: walletBalance / LAMPORTS_PER_SOL,
           totalTipsSent: 0,
           totalAmountSent: 0,
           biggestTip: 0,
@@ -68,13 +54,12 @@ export function useFanStats(fanAddress?: string | PublicKey) {
           lastTipAt: null,
           creatorsSupported: 0,
           bump: 0,
-        });
-        return;
+        };
       }
 
-      setStats({
+      return {
         fan: account.fan,
-        walletBalance,
+        walletBalance: walletBalance / LAMPORTS_PER_SOL,
         totalTipsSent: Number(account.totalTipsSent),
         totalAmountSent: Number(account.totalAmountSent) / LAMPORTS_PER_SOL,
         biggestTip: Number(account.biggestTip) / LAMPORTS_PER_SOL,
@@ -89,33 +74,25 @@ export function useFanStats(fanAddress?: string | PublicKey) {
             : null,
         creatorsSupported: Number(account.creatorsSupported),
         bump: account.bump,
-      });
-    } catch (err) {
-      console.error("Failed to fetch fan stats:", err);
-      setStats({
-        fan,
-        walletBalance: 0,
-        totalTipsSent: 0,
-        totalAmountSent: 0,
-        biggestTip: 0,
-        smallestTip: 0,
-        firstTipAt: null,
-        lastTipAt: null,
-        creatorsSupported: 0,
-        bump: 0,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [program, fanAddress, wallet?.publicKey]);
+      };
+    },
+    enabled: !!program && !!targetPubkey,
+    staleTime: 60_000,
+    retry: (failureCount, error: any) => {
+      if (error?.status === 429) return failureCount < 6;
+      return false;
+    },
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
+    // onError: (err: any) => {
+    //   console.error("Failed to fetch fan stats:", err);
+    // },
+  });
 
-  useEffect(() => {
-    fetchFanStats();
-  }, [fetchFanStats]);
+  const refetch = query.refetch;
 
   return {
-    stats,
-    loading,
-    refetch: fetchFanStats,
+    stats: query.data,
+    loading: query.isLoading || query.isFetching,
+    refetch,
   };
 }

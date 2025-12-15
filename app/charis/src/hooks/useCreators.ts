@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
 import { PublicKey } from "@solana/web3.js";
 import { useProgram } from "./useProgram";
 import { getCreatorProfilePda, getVaultPda } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 
 export interface CreatorProfile {
   creator: PublicKey;
@@ -17,81 +17,74 @@ export interface CreatorProfile {
 
 export function useCreators() {
   const { program } = useProgram();
-  const [creators, setCreators] = useState<CreatorProfile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const fetchCreators = useCallback(async () => {
-    if (!program) {
-      setLoading(false);
-      setError("Program not initialized");
-      return;
-    }
+  const query = useQuery({
+    queryKey: ["all-creators"],
+    queryFn: async (): Promise<CreatorProfile[]> => {
+      if (!program) throw new Error("Program not initialized");
 
-    setLoading(true);
-    setError(null);
-
-    try {
       const vaultAccounts = await program.account.vaultState.all();
 
-      if (!vaultAccounts.length) {
-        setCreators([]);
-        return;
-      }
+      if (vaultAccounts.length === 0) return [];
 
-      const mapped = await Promise.all(
-        vaultAccounts.map(async ({ account: vaultData }) => {
-          const creator = vaultData.creator;
+      const creators = await Promise.all(
+        vaultAccounts.map(
+          async ({ account: vaultData, publicKey: vaultStatePda }) => {
+            const creator = vaultData.creator;
 
-          // Derive the vault PDA for this creator
-          const [vaultAddress] = getVaultPda(creator, program.programId);
+            const [vaultAddress] = getVaultPda(creator, program.programId);
 
-          const vaultStats = {
-            totalEarnings: vaultData.totalEarnings?.toNumber() || 0,
-            totalSupporters: vaultData.totalSupporters?.toNumber() || 0,
-            tipsThisMonth: vaultData.tipsThisMonth?.toNumber() || 0,
-            lastTipAt: vaultData.lastTipAt?.toNumber() || 0,
-          };
+            let name: string | undefined;
+            let bio: string | undefined;
 
-          let profile: Partial<CreatorProfile> = {};
-          try {
-            const [profilePDA] = getCreatorProfilePda(
+            try {
+              const [profilePDA] = getCreatorProfilePda(
+                creator,
+                program.programId
+              );
+              const fetchedProfile = await program.account.creatorProfile.fetch(
+                profilePDA
+              );
+              name = fetchedProfile.name;
+              bio = fetchedProfile.bio;
+            } catch {
+              // Profile doesn't exist yet — ignore
+            }
+
+            return {
               creator,
-              program.programId
-            );
-            const fetchedProfile = await program.account.creatorProfile.fetch(
-              profilePDA
-            );
-            profile = {
-              name: fetchedProfile.name,
-              bio: fetchedProfile.bio,
-            };
-          } catch {
-            // Profile may not exist yet; ignore
+              vaultAddress,
+              totalEarnings:
+                (vaultData.totalEarnings?.toNumber() || 0) / 1_000_000_000,
+              totalSupporters: vaultData.totalSupporters?.toNumber() || 0,
+              tipsThisMonth:
+                (vaultData.tipsThisMonth?.toNumber() || 0) / 1_000_000_000,
+              lastTipAt: vaultData.lastTipAt?.toNumber() || 0,
+              name,
+              bio,
+            } as CreatorProfile;
           }
-
-          return {
-            creator,
-            vaultAddress,
-            ...vaultStats,
-            ...profile,
-          } as CreatorProfile;
-        })
+        )
       );
 
-      setCreators(mapped);
-    } catch (err: any) {
-      console.error("Failed to fetch creators:", err);
-      setCreators([]);
-      setError(err.message ?? "Failed to fetch creators");
-    } finally {
-      setLoading(false);
-    }
-  }, [program]);
+      return creators;
+    },
+    enabled: !!program,
+    staleTime: 120_000, // 2 minutes
+    retry: (failureCount, error: any) => {
+      if (error?.status === 429) return failureCount < 6;
+      return false;
+    },
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
+    // onError: (err: any) => {
+    //   console.error("Failed to fetch creators:", err);
+    // },
+  });
 
-  useEffect(() => {
-    fetchCreators();
-  }, [fetchCreators]);
-
-  return { creators, loading, error, refetch: fetchCreators };
+  return {
+    creators: query.data ?? [],
+    loading: query.isLoading || query.isFetching,
+    error: query.error ? (query.error as Error).message : null,
+    refetch: query.refetch,
+  };
 }

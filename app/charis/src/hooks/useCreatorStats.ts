@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { toast } from "sonner";
 import { useProgram } from "./useProgram";
 import { connection } from "@/config/connection";
 import { getVaultStatePda } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 
 export interface CreatorStats {
   creator: PublicKey;
-  totalEarnings: number; // in SOL
+  totalEarnings: number;
   totalSupporters: number;
   totalAmountOfTipsReceived: number;
   totalNoTipsReceived: number;
@@ -16,8 +17,8 @@ export interface CreatorStats {
   lastTipAt: Date | null;
   monthStartTimestamp: Date | null;
   vaultAddress: PublicKey;
-  vaultBalance: number; // in SOL
-  walletBalance: number; // in SOL
+  vaultBalance: number;
+  walletBalance: number;
   vaultStateBump: number;
   vaultBump: number;
 }
@@ -25,96 +26,100 @@ export interface CreatorStats {
 export function useCreatorStats(creatorAddress?: string | PublicKey) {
   const { program } = useProgram();
 
-  const [statistics, setStatistics] = useState<CreatorStats | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const creatorPubkey = creatorAddress
+    ? typeof creatorAddress === "string"
+      ? new PublicKey(creatorAddress)
+      : creatorAddress
+    : null;
 
-  const fetchCreatorStats = useCallback(async () => {
-    if (!program) {
-      toast.warning("Program must be initialized.");
-      setStatistics(null);
-      return;
-    }
+  const query = useQuery({
+    queryKey: ["creator-stats", creatorPubkey?.toBase58()],
+    queryFn: async (): Promise<CreatorStats | null> => {
+      if (!program || !creatorPubkey) return null;
 
-    if (!creatorAddress) {
-      toast.warning("No creator address provided.");
-      setStatistics(null);
-      return;
-    }
-
-    const creator =
-      typeof creatorAddress === "string"
-        ? new PublicKey(creatorAddress)
-        : creatorAddress;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const [vaultState] = getVaultStatePda(creator, program.programId);
+      const [vaultState] = getVaultStatePda(creatorPubkey, program.programId);
 
       let vaultAccount: any = null;
       try {
-        vaultAccount = await program.account.vaultState.fetch(vaultState);
+        vaultAccount = await program.account.vaultState.fetchNullable(
+          vaultState
+        );
       } catch {
-        // Vault account may not exist yet
         vaultAccount = null;
       }
 
-      const walletBalance = await connection.getBalance(creator);
-      const vaultBalance = vaultAccount
-        ? await connection.getBalance(vaultAccount.vault)
-        : 0;
+      let walletBalance = 0;
+      let vaultBalance = 0;
 
-      setStatistics({
-        creator,
-        totalEarnings: vaultAccount
-          ? Number(vaultAccount.totalEarnings) / LAMPORTS_PER_SOL
-          : 0,
-        totalSupporters: vaultAccount
-          ? Number(vaultAccount.totalSupporters)
-          : 0,
-        totalAmountOfTipsReceived: vaultAccount
-          ? Number(vaultAccount.totalAmountOfTipsReceived) / LAMPORTS_PER_SOL
-          : 0,
-        totalNoTipsReceived: vaultAccount
-          ? Number(vaultAccount.totalNoTipsReceived)
-          : 0,
-        tipsThisMonth: vaultAccount
-          ? Number(vaultAccount.tipsThisMonth) / LAMPORTS_PER_SOL
-          : 0,
-        averageTip: vaultAccount
-          ? Number(vaultAccount.averageTip) / LAMPORTS_PER_SOL
-          : 0,
+      if (vaultAccount) {
+        [walletBalance, vaultBalance] = await Promise.all([
+          connection.getBalance(creatorPubkey),
+          connection.getBalance(vaultAccount.vault),
+        ]);
+      }
+
+      if (!vaultAccount) {
+        return {
+          creator: creatorPubkey,
+          totalEarnings: 0,
+          totalSupporters: 0,
+          totalAmountOfTipsReceived: 0,
+          totalNoTipsReceived: 0,
+          tipsThisMonth: 0,
+          averageTip: 0,
+          lastTipAt: null,
+          monthStartTimestamp: null,
+          vaultAddress: new PublicKey("11111111111111111111111111111111"),
+          vaultBalance: 0,
+          walletBalance: 0,
+          vaultStateBump: 0,
+          vaultBump: 0,
+        };
+      }
+
+      return {
+        creator: creatorPubkey,
+        totalEarnings: Number(vaultAccount.totalEarnings) / LAMPORTS_PER_SOL,
+        totalSupporters: Number(vaultAccount.totalSupporters),
+        totalAmountOfTipsReceived:
+          Number(vaultAccount.totalAmountOfTipsReceived) / LAMPORTS_PER_SOL,
+        totalNoTipsReceived: Number(vaultAccount.totalNoTipsReceived),
+        tipsThisMonth: Number(vaultAccount.tipsThisMonth) / LAMPORTS_PER_SOL,
+        averageTip: Number(vaultAccount.averageTip) / LAMPORTS_PER_SOL,
         lastTipAt:
-          vaultAccount && Number(vaultAccount.lastTipAt) > 0
+          Number(vaultAccount.lastTipAt) > 0
             ? new Date(Number(vaultAccount.lastTipAt) * 1000)
             : null,
         monthStartTimestamp:
-          vaultAccount && Number(vaultAccount.monthStartTimestamp) > 0
+          Number(vaultAccount.monthStartTimestamp) > 0
             ? new Date(Number(vaultAccount.monthStartTimestamp) * 1000)
             : null,
-        vaultAddress: vaultAccount
-          ? vaultAccount.vault
-          : new PublicKey("11111111111111111111111111111111"),
+        vaultAddress: vaultAccount.vault,
         vaultBalance: vaultBalance / LAMPORTS_PER_SOL,
         walletBalance: walletBalance / LAMPORTS_PER_SOL,
-        vaultStateBump: vaultAccount ? vaultAccount.vaultStateBump : 0,
-        vaultBump: vaultAccount ? vaultAccount.vaultBump : 0,
-      });
-    } catch (err: any) {
-      console.error("Failed to fetch creator stats:", err);
-      setError(err.message ?? "Failed to fetch creator stats");
-      toast.error("Failed to fetch creator stats");
-      setStatistics(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [program, creatorAddress]);
+        vaultStateBump: vaultAccount.vaultStateBump,
+        vaultBump: vaultAccount.vaultBump,
+      };
+    },
+    enabled: !!program && !!creatorPubkey,
+    staleTime: 60_000,
+    retry: (failureCount, error: any) => {
+      if (error?.status === 429) return failureCount < 6;
+      return false;
+    },
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
+    // onError: (err: any) => {
+    //   console.error("Failed to fetch creator stats:", err);
+    //   toast.error("Failed to load creator stats");
+    // },
+  });
 
-  useEffect(() => {
-    fetchCreatorStats();
-  }, [fetchCreatorStats]);
+  const refetch = query.refetch;
 
-  return { statistics, loading, error, refetch: fetchCreatorStats };
+  return {
+    statistics: query.data,
+    loading: query.isLoading || query.isFetching,
+    error: query.error ? (query.error as Error).message : null,
+    refetch,
+  };
 }

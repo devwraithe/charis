@@ -1,6 +1,25 @@
-import { Connection } from "@solana/web3.js";
-import { COMMITMENT_LEVEL, DEV_RPC_URL } from "./constants";
+import { Connection, clusterApiUrl } from "@solana/web3.js";
 
-export const NETWORK = "devnet";
+export type Network = "localnet" | "devnet";
 
-export const connection = new Connection(DEV_RPC_URL, COMMITMENT_LEVEL);
+export const NETWORK: Network =
+  (import.meta.env.VITE_PUBLIC_NETWORK as Network) ?? "devnet";
+
+const getRpcUrl = (network: Network): string => {
+  const heliusDevnetUrl = import.meta.env.VITE_PUBLIC_HELIUS_RPC_DEVNET;
+
+  if (network === "localnet") return "http://127.0.0.1:8899";
+
+  if (heliusDevnetUrl) return heliusDevnetUrl;
+
+  return clusterApiUrl("devnet");
+};
+
+const rpcUrl = getRpcUrl(NETWORK);
+
+export const connection = new Connection(rpcUrl, {
+  commitment: "confirmed",
+  confirmTransactionInitialTimeout: 60_000,
+});
+
+console.log(`🌐 Connected to ${NETWORK} via ${rpcUrl.split("?")[0]}`);
